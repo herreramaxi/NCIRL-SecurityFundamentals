@@ -3,11 +3,9 @@ const app = express()
 const db = require('./database/models/index');
 const UserRepo = db.User;
 var crypto = require('crypto');
+const basicAccessAuthentication = require("./basicAccessAuthentication");
 
-// Parse URL-encoded bodies (as sent by HTML forms)
 app.use(express.urlencoded());
-
-// Parse JSON bodies (as sent by API clients)
 app.use(express.json());
 
 if (process.env.NODE_ENV === 'production') {
@@ -35,6 +33,10 @@ app.post('/api/login', (req, res) => {
             return res.status(401).send("User credentials invalid");
         }
 
+        console.log("password: " + req.body.password)
+        console.log("hash: " + hash)
+        console.log("h.password: " + h.password)
+
         res.send("ok");
     }).catch(e => {
         console.log(e);
@@ -42,15 +44,26 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-app.post("/api/user", (req, res) => {
+app.get('/api/user', [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
+    UserRepo.findAll().then(r => {
+        var data = { users: r };
+
+        //https://stackoverflow.com/questions/22203463/replace-null-values-to-empty-values-in-a-json-object
+        data = JSON.parse(JSON.stringify(data).replace(/\:null/gi, "\:\"\""));
+        res.send(data);
+    }).catch(err => {
+        res.status(500).send({ message: err.message });
+    });
+});
+
+app.post("/api/user", [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
     if (!(req.body.firstName && req.body.lastName && req.body.email && req.body.password && req.body.data && req.body.hash)) {
         return res.status(400).send({ message: "Mandatory fields not provided" });
     }
 
     try {
-
         const fieldsConcatenated = req.body.firstName + req.body.lastName + req.body.email + req.body.password + req.body.data;
-        const hash = crypto.createHash('sha256').update(fieldsConcatenated).digest('hex');
+        const hash = crypto.createHash('sha256').update(fieldsConcatenated).digest('base64');
 
         if (hash !== req.body.hash) {
             return res.status(500).send("invalid hash");
@@ -63,7 +76,7 @@ app.post("/api/user", (req, res) => {
         console.log("data: " + req.body.data)
         console.log("hash: '" + req.body.hash + "'")
         console.log("calculated hash: '" + hash + "'")
-        console.log("are equals: " + (hash === req.body.hash))
+        console.log("hash are equals: " + (hash === req.body.hash))
 
         UserRepo.findOne({ where: { email: req.body.email } }).then((h) => {
             if (h) {
@@ -90,5 +103,6 @@ app.post("/api/user", (req, res) => {
         res.status(500).send({ message: "Error when trying to create an user: " + error })
     }
 });
+
 // Start the app by listening on the default Heroku port
 app.listen(process.env.PORT || 3001);
