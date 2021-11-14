@@ -14,7 +14,7 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-    s
+
     //crypto.createHash('sha256').update(password).digest('hex');
     // const hash = crypto.createHash('sha256').update(password).digest('hex');
     const hash = crypto.createHash('sha256').update(password).digest('base64');
