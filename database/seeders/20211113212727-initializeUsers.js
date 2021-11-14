@@ -14,7 +14,7 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-
+    s
     //crypto.createHash('sha256').update(password).digest('hex');
     // const hash = crypto.createHash('sha256').update(password).digest('hex');
     const hash = crypto.createHash('sha256').update(password).digest('base64');
@@ -22,7 +22,7 @@ module.exports = {
       firstName: "admin",
       lastName: "admin",
       email: "admin@sf.com",
-      pass: hash,
+      password: hash,
       createdAt: new Date(),
       updatedAt: new Date()
     }]);

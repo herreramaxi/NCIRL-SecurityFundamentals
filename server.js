@@ -31,7 +31,7 @@ app.post('/api/login', (req, res) => {
     UserRepo.findOne({ where: { email: req.body.email } }).then((h) => {
         const hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
 
-        if (!h || h.pass !== hash) {
+        if (!h || h.password !== hash) {
             return res.status(401).send("User credentials invalid");
         }
 
@@ -64,8 +64,6 @@ app.post("/api/user", (req, res) => {
         console.log("hash: '" + req.body.hash + "'")
         console.log("calculated hash: '" + hash + "'")
         console.log("are equals: " + (hash === req.body.hash))
-
-
 
         UserRepo.findOne({ where: { email: req.body.email } }).then((h) => {
             if (h) {
