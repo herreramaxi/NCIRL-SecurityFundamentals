@@ -1,5 +1,7 @@
 const db = require('./database/models/index');
 const UserRepo = db.User;
+const { Sequelize } = require('sequelize');
+const Op = Sequelize.Op;
 
 verifyAccessRequest = (req, res, next) => {
     let header = req.headers["authorization"];
@@ -21,7 +23,11 @@ verifyAccessRequest = (req, res, next) => {
 
     const userPass = decodedString.split(':');
 
-    UserRepo.findOne({ where: { email: userPass[0] } }).then((h) => {
+    UserRepo.findOne({
+        where: {
+            email: { [Op.iLike]: userPass[0] }
+        }
+    }).then((h) => {
         console.log("pass token: " + userPass[1]);
         console.log("pass db : " + h.password);
         if (!h || h.password !== userPass[1]) {

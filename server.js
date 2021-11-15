@@ -1,7 +1,9 @@
 const express = require('express')
 const app = express()
 const db = require('./database/models/index');
-const UserRepo = db.User;
+const UserModel = db.User;
+const { Sequelize } = require('sequelize');
+const Op = Sequelize.Op;
 var crypto = require('crypto');
 const basicAccessAuthentication = require("./basicAccessAuthentication");
 
@@ -26,26 +28,31 @@ app.post('/api/login', (req, res) => {
         return res.status(400).send({ message: "Mandatory fields not provided" });
     }
 
-    UserRepo.findOne({ where: { email: req.body.email } }).then((h) => {
-        const hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
+    UserModel.findOne(
+        {
+            where: {
+                email: { [Op.iLike]: req.body.email }
+            }
+        }).then((h) => {
+            const hash = crypto.createHash('sha256').update(req.body.password).digest('base64');
 
-        if (!h || h.password !== hash) {
-            return res.status(401).send("User credentials invalid");
-        }
+            if (!h || h.password !== hash) {
+                return res.status(401).send("User credentials invalid");
+            }
 
-        console.log("password: " + req.body.password)
-        console.log("hash: " + hash)
-        console.log("h.password: " + h.password)
+            console.log("password: " + req.body.password)
+            console.log("hash: " + hash)
+            console.log("h.password: " + h.password)
 
-        res.send("ok");
-    }).catch(e => {
-        console.log(e);
-        res.status(500).send("Error on login endpoint");
-    });
+            res.send("ok");
+        }).catch(e => {
+            console.log(e);
+            res.status(500).send("Error on login endpoint");
+        });
 });
 
 app.get('/api/users/getAll', [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
-    UserRepo.findAll().then(r => {
+    UserModel.findAll().then(r => {
         var data = { users: r };
 
         //https://stackoverflow.com/questions/22203463/replace-null-values-to-empty-values-in-a-json-object
@@ -78,7 +85,7 @@ app.post("/api/users/addOrUpdate", [basicAccessAuthentication.verifyAccessReques
         console.log("calculated hash: '" + hash + "'")
         console.log("hash are equals: " + (hash === req.body.hash))
 
-        UserRepo.findOne({ where: { email: req.body.email } }).then((h) => {
+        UserModel.findOne({ where: { email: req.body.email } }).then((h) => {
             if (h) {
                 h.firstName = req.body.firstName;
                 h.lastName = req.body.lastName;
@@ -88,7 +95,7 @@ app.post("/api/users/addOrUpdate", [basicAccessAuthentication.verifyAccessReques
                 h.save();
                 res.send("User updated: " + h.email);
             } else {
-                UserRepo.create({
+                UserModel.create({
                     firstName: req.body.firstName,
                     lastName: req.body.lastName,
                     email: req.body.email,
@@ -104,5 +111,23 @@ app.post("/api/users/addOrUpdate", [basicAccessAuthentication.verifyAccessReques
     }
 });
 
+app.post("/api/users/resetUsers", [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
+
+    try {
+        UserModel.destroy({
+            where: {
+                email: { [Op.notILike]: "admin@sf.com" }
+            }
+        }).then(h => {
+            console.log("users deleted");
+            return res.send("Users deleted except admin");
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({ message: "Error when trying to delete users: " + error })
+    }
+
+});
 // Start the app by listening on the default Heroku port
 app.listen(process.env.PORT || 3001);
