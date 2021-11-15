@@ -44,7 +44,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-app.get('/api/user', [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
+app.get('/api/users/getAll', [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
     UserRepo.findAll().then(r => {
         var data = { users: r };
 
@@ -56,7 +56,7 @@ app.get('/api/user', [basicAccessAuthentication.verifyAccessRequest], (req, res)
     });
 });
 
-app.post("/api/user", [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
+app.post("/api/users/addOrUpdate", [basicAccessAuthentication.verifyAccessRequest], (req, res) => {
     if (!(req.body.firstName && req.body.lastName && req.body.email && req.body.password && req.body.data && req.body.hash)) {
         return res.status(400).send({ message: "Mandatory fields not provided" });
     }
